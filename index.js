@@ -1,22 +1,58 @@
 addListeners();
 
 function addListeners() {
-    // ... (остальные слушатели без изменений) ...
+    document.getElementById('fadeInPlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('fadeInBlock');
+            animaster().fadeIn(block, 5000);
+        });
 
-    let heartBeatingAnimation; // Переменная для хранения запущенной анимации
+    document.getElementById('movePlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('moveBlock');
+            animaster().move(block, 1000, {x: 100, y: 10});
+        });
+
+    document.getElementById('scalePlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('scaleBlock');
+            animaster().scale(block, 1000, 1.25);
+        });
+
+    document.getElementById('fadeOutPlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('fadeOutBlock');
+            animaster().fadeOut(block, 5000);
+        });
+
+    document.getElementById('moveAndHidePlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('moveAndHideBlock');
+            animaster().moveAndHide(block, 5000);
+        });
+
+    document.getElementById('showAndHidePlay')
+        .addEventListener('click', function () {
+            const block = document.getElementById('showAndHideBlock');
+            animaster().showAndHide(block, 6000);
+        });
+
+    // Переменная для хранения объекта анимации сердцебиения
+    let currentHeartBeating;
 
     document.getElementById('heartBeatingPlay')
         .addEventListener('click', function () {
             const block = document.getElementById('heartBeatingBlock');
-            // Запускаем и сохраняем объект с методом stop
-            heartBeatingAnimation = animaster().heartBeating(block);
+            // Запускаем анимацию и сохраняем объект с методом stop
+            currentHeartBeating = animaster().heartBeating(block);
         });
 
+    // Обработчик для кнопки Stop
     document.getElementById('heartBeatingStop')
         .addEventListener('click', function () {
             // Если анимация была запущена, останавливаем её
-            if (heartBeatingAnimation) {
-                heartBeatingAnimation.stop();
+            if (currentHeartBeating) {
+                currentHeartBeating.stop();
             }
         });
 }
@@ -26,7 +62,7 @@ function addListeners() {
  */
 function animaster() {
 
-    // --- ФУНКЦИИ СБРОСА (Скрытые) ---
+    // --- Служебные функции сброса (недоступны снаружи) ---
 
     function resetFadeIn(element) {
         element.style.transitionDuration = null;
@@ -44,6 +80,8 @@ function animaster() {
         element.style.transitionDuration = null;
         element.style.transform = null;
     }
+
+    // --- Основные методы анимации ---
 
     function fadeIn(element, duration) {
         element.style.transitionDuration =  `${duration}ms`;
@@ -93,18 +131,18 @@ function animaster() {
 
         function beat() {
             scale(element, beatDuration, 1.4);
-
             setTimeout(() => {
                 scale(element, beatDuration, 1);
             }, beatDuration);
         }
 
         beat();
+        // Сохраняем ID интервала, чтобы его можно было остановить
         const intervalId = setInterval(beat, beatDuration * 2);
 
-        // Возвращаем объект с методом stop для управления
+        // Возвращаем объект с методом stop
         return {
-            stop: function() {
+            stop() {
                 clearInterval(intervalId);
             }
         };
@@ -121,7 +159,6 @@ function animaster() {
         return result.join(' ');
     }
 
-    // Возвращаем объект с публичными методами
     return {
         fadeIn: fadeIn,
         fadeOut: fadeOut,
