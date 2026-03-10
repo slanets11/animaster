@@ -1,6 +1,7 @@
 addListeners();
 
 function addListeners() {
+
     document.getElementById('fadeInPlay')
         .addEventListener('click', function () {
             const block = document.getElementById('fadeInBlock');
@@ -25,10 +26,21 @@ function addListeners() {
             animaster().fadeOut(block, 5000);
         });
 
+    let currentMoveAndHide;
+
     document.getElementById('moveAndHidePlay')
         .addEventListener('click', function () {
             const block = document.getElementById('moveAndHideBlock');
-            animaster().moveAndHide(block, 5000);
+            currentMoveAndHide = animaster().moveAndHide(block, 5000);
+        });
+
+    document.getElementById('moveAndHideReset')
+        .addEventListener('click', function () {
+
+            if (currentMoveAndHide) {
+                currentMoveAndHide.reset();
+            }
+
         });
 
     document.getElementById('showAndHidePlay')
@@ -37,32 +49,34 @@ function addListeners() {
             animaster().showAndHide(block, 6000);
         });
 
-    // Переменная для хранения объекта анимации сердцебиения
     let currentHeartBeating;
 
     document.getElementById('heartBeatingPlay')
         .addEventListener('click', function () {
+
             const block = document.getElementById('heartBeatingBlock');
-            // Запускаем анимацию и сохраняем объект с методом stop
             currentHeartBeating = animaster().heartBeating(block);
+
         });
 
-    // Обработчик для кнопки Stop
     document.getElementById('heartBeatingStop')
         .addEventListener('click', function () {
-            // Если анимация была запущена, останавливаем её
+
             if (currentHeartBeating) {
                 currentHeartBeating.stop();
             }
+
         });
 }
 
-/**
- * Создает и возвращает объект с методами для управления анимациями
- */
+
 function animaster() {
 
-    // --- Служебные функции сброса (недоступны снаружи) ---
+    const anim = {
+        _steps: []
+    };
+
+    // reset functions
 
     function resetFadeIn(element) {
         element.style.transitionDuration = null;
@@ -81,71 +95,136 @@ function animaster() {
         element.style.transform = null;
     }
 
-    // --- Основные методы анимации ---
+    // base animations
 
     function fadeIn(element, duration) {
-        element.style.transitionDuration =  `${duration}ms`;
+
+        element.style.transitionDuration = `${duration}ms`;
         element.classList.remove('hide');
         element.classList.add('show');
+
     }
 
     function fadeOut(element, duration) {
+
         element.style.transitionDuration = `${duration}ms`;
         element.classList.remove('show');
         element.classList.add('hide');
+
     }
 
     function move(element, duration, translation) {
-        element.style.transitionDuration = `${duration}ms`;
-        element.style.transform = getTransform(translation, null);
+
+        animaster()
+            .addMove(duration, translation)
+            .play(element);
+
     }
 
     function scale(element, duration, ratio) {
-        element.style.transitionDuration =  `${duration}ms`;
+
+        element.style.transitionDuration = `${duration}ms`;
         element.style.transform = getTransform(null, ratio);
+
     }
 
     function moveAndHide(element, duration) {
+
         const moveDuration = duration * 2/5;
         const fadeDuration = duration * 3/5;
 
-        move(element, moveDuration, {x: 100, y: 20});
+        move(element, moveDuration, {x:100, y:20});
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             fadeOut(element, fadeDuration);
         }, moveDuration);
+
+        return {
+
+            reset() {
+
+                clearTimeout(timeoutId);
+
+                resetFadeOut(element);
+                resetMoveAndScale(element);
+
+            }
+
+        }
+
     }
 
     function showAndHide(element, duration) {
-        const stepDuration = duration / 3;
 
-        fadeIn(element, stepDuration);
+        const step = duration / 3;
+
+        fadeIn(element, step);
 
         setTimeout(() => {
-            fadeOut(element, stepDuration);
-        }, stepDuration * 2);
+            fadeOut(element, step);
+        }, step * 2);
+
     }
 
     function heartBeating(element) {
+
         const beatDuration = 500;
 
         function beat() {
+
             scale(element, beatDuration, 1.4);
+
             setTimeout(() => {
                 scale(element, beatDuration, 1);
             }, beatDuration);
+
         }
 
         beat();
-        // Сохраняем ID интервала, чтобы его можно было остановить
+
         const intervalId = setInterval(beat, beatDuration * 2);
 
-        // Возвращаем объект с методом stop
         return {
+
             stop() {
                 clearInterval(intervalId);
             }
-        };
+
+        }
+
+    }
+
+    // step system
+
+    anim.addMove = function(duration, translation) {
+
+        this._steps.push({
+
+            type: 'move',
+            duration: duration,
+            translation: translation
+
+        });
+
+        return this;
+
+    }
+
+    anim.play = function(element) {
+
+        let delay = 0;
+
+        this._steps.forEach(step => {
+            setTimeout(() => {
+                if (step.type === 'move') {
+
+                    element.style.transitionDuration = `${step.duration}ms`;
+                    element.style.transform = getTransform(step.translation, null);
+
+                }
+            }, delay);
+            delay += step.duration;
+        });
     }
 
     function getTransform(translation, ratio) {
@@ -160,12 +239,15 @@ function animaster() {
     }
 
     return {
-        fadeIn: fadeIn,
-        fadeOut: fadeOut,
-        move: move,
-        scale: scale,
-        moveAndHide: moveAndHide,
-        showAndHide: showAndHide,
-        heartBeating: heartBeating
+        fadeIn,
+        fadeOut,
+        move,
+        scale,
+        moveAndHide,
+        showAndHide,
+        heartBeating,
+        addMove: anim.addMove,
+        play: anim.play,
+        _steps: anim._steps
     };
 }
